@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, CartItem } from '../types';
+import { Product, CartItem, Theme, Language } from '../types';
+import { translations } from '../utils/translations';
 
 interface StoreContextType {
   cart: CartItem[];
@@ -11,6 +12,11 @@ interface StoreContextType {
   cartCount: number;
   isAdminMode: boolean;
   toggleAdminMode: () => void;
+  theme: Theme;
+  toggleTheme: () => void;
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: (key: string) => string;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -26,19 +32,48 @@ export const useStore = () => {
 export const StoreProvider = ({ children }: { children?: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [theme, setTheme] = useState<Theme>('light');
+  const [language, setLanguage] = useState<Language>('en');
 
-  // Load cart from local storage on mount
+  // Load state from local storage on mount
   useEffect(() => {
     const savedCart = localStorage.getItem('dropflow_cart');
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
+    const savedTheme = localStorage.getItem('dropflow_theme') as Theme;
+    const savedLang = localStorage.getItem('dropflow_lang') as Language;
+    
+    if (savedCart) setCart(JSON.parse(savedCart));
+    if (savedTheme) setTheme(savedTheme);
+    if (savedLang) setLanguage(savedLang);
+    else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+       setTheme('dark');
     }
   }, []);
 
-  // Save cart to local storage on change
+  // Sync Theme with HTML class
   useEffect(() => {
-    localStorage.setItem('dropflow_cart', JSON.stringify(cart));
-  }, [cart]);
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('dropflow_theme', theme);
+  }, [theme]);
+
+  // Sync Language and Direction
+  useEffect(() => {
+    localStorage.setItem('dropflow_lang', language);
+    const root = window.document.documentElement;
+    
+    // Set text direction based on language
+    if (language === 'he' || language === 'ar') {
+      root.dir = 'rtl';
+      root.lang = language;
+    } else {
+      root.dir = 'ltr';
+      root.lang = language;
+    }
+  }, [language]);
 
   const addToCart = (product: Product, quantity = 1) => {
     setCart((prev) => {
@@ -72,6 +107,14 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
 
   const toggleAdminMode = () => setIsAdminMode(!isAdminMode);
 
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+  // Translation function helper
+  const t = (key: string): string => {
+    // @ts-ignore
+    return translations[language][key] || key;
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -83,7 +126,12 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         cartTotal,
         cartCount,
         isAdminMode,
-        toggleAdminMode
+        toggleAdminMode,
+        theme,
+        toggleTheme,
+        language,
+        setLanguage,
+        t
       }}
     >
       {children}

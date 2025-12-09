@@ -41,3 +41,6 @@ export interface Supplier {
   apiStatus: 'connected' | 'disconnected';
   autoSync: boolean;
 }
+
+export type Language = 'en' | 'es' | 'he' | 'am' | 'ar' | 'fr' | 'de' | 'zh';
+export type Theme = 'light' | 'dark';
