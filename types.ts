@@ -26,6 +26,7 @@ export interface Order {
   status: 'pending' | 'processing' | 'shipped' | 'delivered';
   date: string;
   trackingNumber?: string;
+  paymentMethod: 'credit_card' | 'paypal';
 }
 
 export interface DashboardStats {

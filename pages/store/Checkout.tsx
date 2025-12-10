@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../context/StoreContext';
 import { orderService } from '../../services/mockApi';
-import { CheckCircle, Loader } from 'lucide-react';
+import { CheckCircle, Loader, CreditCard, Wallet } from 'lucide-react';
 
 const Checkout = () => {
   const { cart, cartTotal, clearCart, t } = useStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Info, 2: Payment, 3: Success
+  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'paypal'>('credit_card');
+
+  // In a real app, you would use this client ID with the PayPal SDK
+  const paypalClientId = process.env.PAYPAL_CLIENT_ID;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -31,7 +35,8 @@ const Checkout = () => {
       customerName: formData.name,
       customerEmail: formData.email,
       items: cart,
-      total: cartTotal
+      total: cartTotal,
+      paymentMethod: paymentMethod
     });
     
     setLoading(false);
@@ -96,16 +101,70 @@ const Checkout = () => {
 
             <div className="mt-8 pt-8 border-t dark:border-slate-700">
               <h2 className="text-xl font-bold mb-4 dark:text-white">{t('checkout.payment')}</h2>
-              <div className="p-4 border dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm mb-4">
-                This is a secure demo. No real payment will be processed.
+              
+              <div className="flex gap-4 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('credit_card')}
+                  className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                    paymentMethod === 'credit_card' 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' 
+                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <CreditCard size={24} />
+                  <span className="font-medium text-sm">{t('checkout.credit_card')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('paypal')}
+                  className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
+                    paymentMethod === 'paypal' 
+                      ? 'border-[#0070BA] bg-[#0070BA]/10 text-[#0070BA] dark:text-[#0070BA]' 
+                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <Wallet size={24} />
+                  <span className="font-medium text-sm">PayPal</span>
+                </button>
               </div>
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                {loading ? <Loader className="animate-spin" /> : `${t('checkout.pay')} $${cartTotal.toFixed(2)}`}
-              </button>
+
+              {paymentMethod === 'credit_card' ? (
+                <>
+                  <div className="p-4 border dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm mb-4">
+                    This is a secure demo. No real payment will be processed.
+                  </div>
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {loading ? <Loader className="animate-spin" /> : `${t('checkout.pay')} $${cartTotal.toFixed(2)}`}
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  {/* Mock PayPal Button */}
+                  <button 
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#FFC439] hover:bg-[#F4BB35] text-black/80 py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 relative overflow-hidden"
+                  >
+                     {loading ? (
+                       <Loader className="animate-spin text-black" />
+                     ) : (
+                       <div className="flex items-center gap-1">
+                         <span className="italic font-bold text-[#003087]">Pay</span>
+                         <span className="italic font-bold text-[#009cde]">Pal</span>
+                       </div>
+                     )}
+                  </button>
+                  <div className="text-center text-xs text-slate-400">
+                    Secure checkout powered by PayPal. <br/>
+                    {paypalClientId ? <span className="text-green-500">Client ID Active</span> : null}
+                  </div>
+                </div>
+              )}
             </div>
           </form>
         </div>
